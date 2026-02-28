@@ -68,6 +68,7 @@ class GameApp(
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
+        GameState.reset()
         requestSceneSwitch(DungeonScene(this, level = 1))
     }
 

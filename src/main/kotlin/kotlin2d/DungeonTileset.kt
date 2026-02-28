@@ -20,7 +20,8 @@ enum class TileKind {
     FLOOR,
     WALL,
     DOOR,
-    STAIRS
+    STAIRS,
+    ITEM
 }
 
 enum class DoorVariant {
@@ -85,6 +86,28 @@ object DungeonTileset {
         atlasY = 15    // 480 / 32
     )
 
+    // Items
+    val key = TileDef(
+        kind = TileKind.ITEM,
+        variant = "key",
+        atlasX = 1,
+        atlasY = 9
+    )
+
+    val potion = TileDef(
+        kind = TileKind.ITEM,
+        variant = "potion",
+        atlasX = 5,
+        atlasY = 9
+    )
+
+    val sword = TileDef(
+        kind = TileKind.ITEM,
+        variant = "sword",
+        atlasX = 9,
+        atlasY = 9
+    )
+
     // Player character
     val player = TileDef(
         kind = TileKind.FLOOR, // occupies floor tile
@@ -100,6 +123,9 @@ object DungeonTileset {
         doorOpen,
         stairsDown,
         stairsUp,
+        key,
+        potion,
+        sword,
         player
     )
 
