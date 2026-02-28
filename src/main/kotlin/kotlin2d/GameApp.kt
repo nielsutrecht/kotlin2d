@@ -13,7 +13,7 @@ class GameApp(
 )
 {
     private var window: Long = 0
-    private var currentScene: Scene = FirstScene()
+    private var currentScene: Scene = FirstScene(width, height)
 
     fun run() {
         println("Running on LWJGL ${Version.getVersion()}")
