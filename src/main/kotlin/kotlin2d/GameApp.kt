@@ -40,6 +40,8 @@ class GameApp(
             error("Failed to create GLFW window")
         }
 
+        Input.window = window
+
         // Close on ESC
         glfwSetKeyCallback(window) { _, key, _, action, _ ->
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {

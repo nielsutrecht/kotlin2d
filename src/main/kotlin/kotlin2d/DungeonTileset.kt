@@ -85,13 +85,22 @@ object DungeonTileset {
         atlasY = 15    // 480 / 32
     )
 
+    // Player character
+    val player = TileDef(
+        kind = TileKind.FLOOR, // occupies floor tile
+        variant = "player",
+        atlasX = 4,
+        atlasY = 2
+    )
+
     val all: List<TileDef> = listOf(
         floor,
         wall,
         doorClosed,
         doorOpen,
         stairsDown,
-        stairsUp
+        stairsUp,
+        player
     )
 
     val byKind: Map<TileKind, List<TileDef>> = all.groupBy { it.kind }

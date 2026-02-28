@@ -3,6 +3,7 @@ package kotlin2d
 import org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT
 import org.lwjgl.opengl.GL11.glClear
 import org.lwjgl.opengl.GL11.glClearColor
+import org.lwjgl.glfw.GLFW.*
 
 /**
  * First real scene: renders a simple dungeon layout using the logical tileset
@@ -17,16 +18,57 @@ class FirstScene(
     private lateinit var tiles: Array<Array<TileDef>>
     private lateinit var tilesetTexture: Texture
 
+    private var playerX: Int = 0
+    private var playerY: Int = 0
+    private var moveCooldown = 0.15f
+    private var moveTimer = 0f
+
     override fun onEnter() {
         glClearColor(0f, 0f, 0f, 1f)
 
         tilesetTexture = Texture.load("/textures/dungeon-tileset.png")
         renderer = SimpleTileRenderer(screenWidth, screenHeight, TILE_SIZE, tilesetTexture)
         tiles = createDungeonLayout()
+
+        playerX = screenWidth / (2 * TILE_SIZE)
+        playerY = screenHeight / (2 * TILE_SIZE)
     }
 
     override fun update(delta: Float) {
-        // No animation in this scene yet; purely static dungeon view.
+        moveTimer += delta
+        if (moveTimer < moveCooldown) return
+
+        var dx = 0
+        var dy = 0
+
+        if (glfwGetKey(Input.window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(Input.window, GLFW_KEY_UP) == GLFW_PRESS) {
+            dy = -1
+        } else if (glfwGetKey(Input.window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(Input.window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            dy = 1
+        }
+
+        if (glfwGetKey(Input.window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(Input.window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            dx = -1
+        } else if (glfwGetKey(Input.window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(Input.window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            dx = 1
+        }
+
+        if (dx == 0 && dy == 0) {
+            return
+        }
+
+        val targetX = playerX + dx
+        val targetY = playerY + dy
+
+        if (targetY in tiles.indices && targetX in tiles[0].indices) {
+            val targetTile = tiles[targetY][targetX]
+            if (targetTile.kind != TileKind.WALL) {
+                playerX = targetX
+                playerY = targetY
+            }
+        }
+
+        moveTimer = 0f
     }
 
     override fun render() {
@@ -38,6 +80,8 @@ class FirstScene(
                 renderer.drawTile(x, y, row[x])
             }
         }
+
+        renderer.drawTile(playerX, playerY, DungeonTileset.player)
     }
 
     private fun createDungeonLayout(): Array<Array<TileDef>> {
