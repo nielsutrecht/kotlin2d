@@ -5,10 +5,8 @@ import org.lwjgl.opengl.GL11.glClear
 import org.lwjgl.opengl.GL11.glClearColor
 
 /**
- * First real scene: renders a simple dungeon layout using the logical tileset.
- *
- * This uses a very small shader-based tile renderer that draws colored squares
- * (no textures yet) to visualize walls, floors, doors, and stairs.
+ * First real scene: renders a simple dungeon layout using the logical tileset
+ * and the dungeon tileset texture.
  */
 class FirstScene(
     private val screenWidth: Int,
@@ -17,11 +15,13 @@ class FirstScene(
 
     private lateinit var renderer: SimpleTileRenderer
     private lateinit var tiles: Array<Array<TileDef>>
+    private lateinit var tilesetTexture: Texture
 
     override fun onEnter() {
         glClearColor(0f, 0f, 0f, 1f)
 
-        renderer = SimpleTileRenderer(screenWidth, screenHeight, TILE_SIZE)
+        tilesetTexture = Texture.load("/textures/dungeon-tileset.png")
+        renderer = SimpleTileRenderer(screenWidth, screenHeight, TILE_SIZE, tilesetTexture)
         tiles = createDungeonLayout()
     }
 
@@ -35,9 +35,7 @@ class FirstScene(
         for (y in tiles.indices) {
             val row = tiles[y]
             for (x in row.indices) {
-                val tile = row[x]
-                val (r, g, b) = colorFor(tile)
-                renderer.drawTile(x, y, r, g, b)
+                renderer.drawTile(x, y, row[x])
             }
         }
     }
@@ -67,25 +65,5 @@ class FirstScene(
 
         return grid
     }
-
-    private fun colorFor(tile: TileDef): Triple<Float, Float, Float> =
-        when (tile.kind) {
-            TileKind.FLOOR -> Triple(0.15f, 0.15f, 0.15f)
-            TileKind.WALL -> Triple(0.4f, 0.4f, 0.45f)
-            TileKind.DOOR -> {
-                if (tile.variant == "closed") {
-                    Triple(0.55f, 0.35f, 0.2f)
-                } else {
-                    Triple(0.7f, 0.5f, 0.3f)
-                }
-            }
-            TileKind.STAIRS -> {
-                if (tile.variant == "down") {
-                    Triple(0.2f, 0.4f, 0.8f)
-                } else {
-                    Triple(0.2f, 0.75f, 0.3f)
-                }
-            }
-        }
 }
 

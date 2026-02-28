@@ -3,16 +3,18 @@ package kotlin2d
 /**
  * Logical description of the dungeon tiles we can render from a sprite atlas.
  *
- * Each tile is assumed to be a square of [TILE_SIZE] pixels. The [atlasX]/[atlasY]
- * coordinates refer to tile positions in the atlas grid (not pixels):
- * - pixelX = atlasX * TILE_SIZE
- * - pixelY = atlasY * TILE_SIZE
+ * Each tile is assumed to be square in the **game world** (screen space),
+ * using [TILE_SIZE] pixels per tile. The [atlasX]/[atlasY] coordinates refer
+ * to tile positions in the atlas grid (not pixels) and are mapped to the
+ * actual texture size by the renderer.
  *
- * The initial atlas layout we target is a single row:
+ * The current atlas layout is a single row:
  * [0] floor     [1] wall     [2] door-closed  [3] door-open  [4] stairs-down  [5] stairs-up
  */
 
-const val TILE_SIZE = 16
+// How large a tile should appear on screen (in pixels).
+// Our atlas uses 32x32 tiles, and we render them 1:1.
+const val TILE_SIZE = 32
 
 enum class TileKind {
     FLOOR,
@@ -44,43 +46,43 @@ object DungeonTileset {
     val floor = TileDef(
         kind = TileKind.FLOOR,
         variant = "default",
-        atlasX = 0,
-        atlasY = 0
+        atlasX = 41,
+        atlasY = 12
     )
 
     val wall = TileDef(
         kind = TileKind.WALL,
         variant = "default",
-        atlasX = 1,
-        atlasY = 0
+        atlasX = 26,   // 832 / 32
+        atlasY = 16    // 512 / 32
     )
 
     val doorClosed = TileDef(
         kind = TileKind.DOOR,
         variant = DoorVariant.CLOSED.name.lowercase(),
-        atlasX = 2,
-        atlasY = 0
+        atlasX = 23,   // 736 / 32
+        atlasY = 11    // 352 / 32
     )
 
     val doorOpen = TileDef(
         kind = TileKind.DOOR,
         variant = DoorVariant.OPEN.name.lowercase(),
-        atlasX = 3,
-        atlasY = 0
+        atlasX = 27,   // 864 / 32
+        atlasY = 11    // 352 / 32
     )
 
     val stairsDown = TileDef(
         kind = TileKind.STAIRS,
         variant = StairsVariant.DOWN.name.lowercase(),
-        atlasX = 4,
-        atlasY = 0
+        atlasX = 41,   // 1312 / 32
+        atlasY = 15    // 480 / 32
     )
 
     val stairsUp = TileDef(
         kind = TileKind.STAIRS,
         variant = StairsVariant.UP.name.lowercase(),
-        atlasX = 5,
-        atlasY = 0
+        atlasX = 42,   // 1344 / 32
+        atlasY = 15    // 480 / 32
     )
 
     val all: List<TileDef> = listOf(
