@@ -1,0 +1,72 @@
+---
+description: Core agent team rules for developing a 2D Kotlin game using LWJGL
+alwaysApply: true
+---
+
+# Kotlin2D Game Agent Team Rules
+
+## Project Context
+
+- This project is a **2D game written in Kotlin**, using **LWJGL 3** as the primary bridge to OpenGL and other native libraries.
+- Target platforms are at least **macOS and Windows**; avoid platform-specific assumptions unless explicitly requested.
+- Prefer **Gradle (Kotlin DSL)** for build configuration and dependency management.
+
+## General Guidance
+
+- Optimize for **clarity and learning**: the user may want to understand the architecture as well as get working code.
+- When proposing APIs or structures, favor **idiomatic Kotlin** and **simple, composable designs** over premature abstractions.
+- Explain **high-level reasoning briefly**, then move to concrete code and file-level suggestions.
+- When editing or creating code, keep **game loop, rendering, and input handling** concerns clearly separated when practical.
+
+## Game Architecture Preferences
+
+- Suggest a structure with:
+  - A **main entry point** that bootstraps LWJGL, window, OpenGL context, and main loop.
+  - A dedicated **rendering layer** (e.g., sprite batch, camera, viewport handling).
+  - A simple **game state / scene management** approach (e.g., screens or states for menu, gameplay, pause).
+- For entity logic:
+  - Start with **simple data classes and components**; only introduce a full ECS if the user requests or complexity demands it.
+- Handle **delta time** and **fixed update vs render** loops explicitly when designing the main loop.
+
+## LWJGL and OpenGL Practices
+
+- Assume **LWJGL 3** with modern OpenGL where possible, but:
+  - Use **simple, approachable patterns** (e.g., textured quads, sprite sheets) instead of advanced shader systems unless needed.
+  - Clearly separate **OpenGL initialization** (shaders, buffers, textures) from per-frame update and draw code.
+- Pay attention to:
+  - **Resource management** (properly disposing of buffers, textures, and shaders).
+  - **Coordinate systems** (2D orthographic projection, origin conventions).
+  - **Input handling** via GLFW (keyboard, mouse).
+
+## Testing, Debugging, and Tooling
+
+- Encourage **small runnable examples** (minimal windows, simple rendering) when introducing new concepts.
+- When debugging, suggest:
+  - Logging key values (positions, velocities, frame times).
+  - Simple visual debugging (bounding boxes, guides).
+- Recommend **Gradle tasks** and configuration that make it easy to:
+  - Run the game from the IDE.
+  - Package and run from the command line.
+
+## Collaboration Between Agents
+
+When multiple agents are involved in this project:
+
+- The **Lead Game Architect** agent should:
+  - Own overall **project structure**, directories, and long-term architecture decisions.
+  - Define or adjust **high-level patterns** (scenes, systems, data flow).
+- The **Rendering & Performance** agent should:
+  - Focus on **OpenGL, textures, shaders, batching, cameras, and performance** tuning.
+  - Keep APIs they design **simple enough** for the gameplay agent to use comfortably.
+- The **Gameplay & Systems** agent should:
+  - Focus on **game rules, input mapping, movement, collisions, and state machines**.
+  - Use rendering and engine utilities rather than duplicating low-level OpenGL work.
+- The **Tooling & Build** agent should:
+  - Own **Gradle setup, LWJGL dependencies, run configurations, packaging, and platform quirks**.
+
+All agents should:
+
+- Keep changes **cohesive and localized**; avoid refactoring large swaths of code unless necessary.
+- Prefer **incremental improvements** over large rewrites.
+- Document any **non-obvious trade-offs** in concise comments or short explanations for the user.
+
