@@ -21,6 +21,12 @@ object Audio {
     private var lastTrackIndex: Int = -1
     private var available = false
 
+    // SFX
+    private const val SFX_POOL_SIZE = 8
+    private val sfxSources = IntArray(SFX_POOL_SIZE)
+    private var sfxNextIndex = 0
+    private val sfxBuffers = mutableMapOf<String, Int>()
+
     fun init() {
         device = alcOpenDevice(null as CharSequence?)
         if (device == 0L) {
@@ -41,20 +47,44 @@ object Audio {
 
         source = alGenSources()
 
+        // SFX: allocate source pool and preload sounds
+        for (i in 0 until SFX_POOL_SIZE) {
+            sfxSources[i] = alGenSources()
+        }
+        val soundsDir = File("sounds")
+        soundsDir.listFiles { f -> f.extension == "ogg" }?.forEach { file ->
+            val name = file.nameWithoutExtension
+            sfxBuffers[name] = decodeOgg(file)
+        }
+
+        available = true
+
         val musicDir = File("music")
         tracks = musicDir.listFiles { f -> f.extension == "ogg" }?.toList().orEmpty()
         if (tracks.isEmpty()) {
             println("Warning: No music files found in music/ directory")
+        } else {
+            playRandomTrack()
+        }
+    }
+
+    fun playSound(name: String) {
+        if (!available) return
+        val buffer = sfxBuffers[name]
+        if (buffer == null) {
+            println("Warning: Unknown sound '$name'")
             return
         }
-
-        available = true
-        playRandomTrack()
+        val src = sfxSources[sfxNextIndex % SFX_POOL_SIZE]
+        alSourceStop(src)
+        alSourcei(src, AL_BUFFER, buffer)
+        alSourcePlay(src)
+        sfxNextIndex++
     }
 
     fun update() {
         if (!available) return
-        if (alGetSourcei(source, AL_SOURCE_STATE) == AL_STOPPED) {
+        if (tracks.isNotEmpty() && alGetSourcei(source, AL_SOURCE_STATE) == AL_STOPPED) {
             playRandomTrack()
         }
     }
@@ -64,6 +94,14 @@ object Audio {
         alSourceStop(source)
         alDeleteSources(source)
         if (currentBuffer != 0) alDeleteBuffers(currentBuffer)
+        for (src in sfxSources) {
+            alSourceStop(src)
+            alDeleteSources(src)
+        }
+        for (buf in sfxBuffers.values) {
+            alDeleteBuffers(buf)
+        }
+        sfxBuffers.clear()
         alcMakeContextCurrent(0)
         alcDestroyContext(context)
         alcCloseDevice(device)

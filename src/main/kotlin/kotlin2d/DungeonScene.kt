@@ -117,6 +117,12 @@ class DungeonScene(
             if (item != null) {
                 GameState.inventory.add(item.type)
                 items.remove(item)
+                val soundName = when (item.type) {
+                    ItemType.KEY -> "key"
+                    ItemType.HEALTH_POTION -> "potion"
+                    ItemType.SWORD -> "sword"
+                }
+                Audio.playSound(soundName)
             }
 
             // Check stairs
