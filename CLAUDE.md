@@ -16,21 +16,39 @@ Requires Java 17 (see `.java-version`). No test suite exists yet.
 
 ## Project Overview
 
-A 2D dungeon game written in **Kotlin** using **LWJGL 3** (OpenGL + GLFW + STB). Single Gradle module, Kotlin DSL. All source is in `src/main/kotlin/kotlin2d/`.
+A 2D dungeon game written in **Kotlin** using **LWJGL 3** (OpenGL + GLFW + STB + OpenAL). Single Gradle module, Kotlin DSL. All source is in `src/main/kotlin/kotlin2d/`.
 
 ## Architecture
 
-**Game loop:** `Main.kt` → `GameApp` → game loop with delta time. `GameApp` owns the GLFW window, OpenGL context, and runs update/render on the current `Scene`.
+**Game loop:** `Main.kt` → `GameApp` → game loop with delta time. Owns GLFW window and OpenGL context. Runs `update`/`render` on the current `Scene`, calls `Audio.update()`, and supports scene switching via `pendingScene`.
 
-**Scene system:** `Scene` interface with `update(delta)`, `render()`, `onEnter()`, `onExit()`. `FirstScene` is the only scene — a tile-based dungeon room with a controllable player character (WASD/arrow keys, grid-based movement with cooldown timer).
+**Scene system:** `Scene` interface (`update`, `render`, `onEnter`, `onExit`). `DungeonScene` is the main gameplay scene — grid-based player movement (WASD/arrows), item pickup, door/key interaction, chest opening with BFS loot scatter, coin collection, and stair-based multi-level transitions.
 
-**Rendering:** `SimpleTileRenderer` draws textured quads using OpenGL fixed-function pipeline (immediate mode `GL_QUADS`). Converts grid coordinates → NDC via manual pixel-to-NDC math. No projection matrix or camera yet.
+**Rendering:** `SimpleTileRenderer` draws textured quads (OpenGL fixed-function `GL_QUADS`). `Camera` provides scroll/follow and visible-range culling. `Hud` draws inventory icons and gold counter in screen space.
 
-**Tileset:** `DungeonTileset` object defines tile definitions (`TileDef`) with atlas coordinates into a 32×32 sprite sheet (`dungeon-tileset.png`). `TileKind` enum classifies tiles for gameplay logic (e.g., `WALL` blocks movement).
+**Tileset:** `DungeonTileset` defines `TileDef` entries with atlas coordinates into a 32×32 sprite sheet. `TileKind` enum classifies tiles for gameplay (WALL, FLOOR, DOOR, STAIRS, etc.). Includes enemy and item tiles.
 
-**Texture loading:** `Texture.load()` reads from classpath resources via STB, returns a data class with OpenGL texture ID and dimensions.
+**Map generation:** `DungeonGenerator` — procedural rooms + L-shaped corridors, door/key placement, enemy/chest/item spawning scaled by dungeon level.
 
-**Input:** `Input` is a global object holding the GLFW window handle. Scenes query key state directly via `glfwGetKey`.
+**Entities:** Data-class approach — `Enemy` (5 types, static), `Item` (KEY/POTION/SWORD), `Chest` (openable, loot scatter), `CoinPile`. All placed per-level by the generator.
+
+**State:** `GameState` singleton — inventory, gold, player stats, per-level dungeon cache for revisiting floors.
+
+**Audio:** `Audio` singleton — OpenAL backend. Background music (shuffled OGG tracks from `music/`). SFX pool (8 sources, round-robin) with sound groups (random variant selection, auto-detected by `-N` suffix from `sounds/`).
+
+**Input/Textures:** `Input` global object for GLFW key state. `Texture.load()` reads classpath resources via STB.
+
+## Project Structure
+
+- `src/main/kotlin/kotlin2d/` — all source code
+- `src/main/resources/textures/` — sprite atlas
+- `sounds/` — SFX (OGG, loaded from filesystem)
+- `music/` — background music (OGG, loaded from filesystem)
+- `openspec/` — spec-driven workflow
+
+## OpenSpec Workflow
+
+The project uses a spec-driven workflow via `openspec/`. Living specs live in `openspec/specs/<feature>/spec.md`. Completed changes are archived in `openspec/changes/archive/`.
 
 ## Key Conventions
 
