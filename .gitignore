@@ -1,3 +1,7 @@
+# Don't check in music for now
+
+*.ogg
+
 /.gradle/
 /build/
 /.idea/
