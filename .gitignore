@@ -1,6 +1,4 @@
-# Don't check in music for now
-
-*.ogg
+## IDE configs
 
 /.gradle/
 /build/
