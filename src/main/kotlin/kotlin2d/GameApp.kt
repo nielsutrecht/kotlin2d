@@ -69,6 +69,7 @@ class GameApp(
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
         GameState.reset()
+        Audio.init()
         requestSceneSwitch(DungeonScene(this, level = 1))
     }
 
@@ -90,6 +91,7 @@ class GameApp(
 
             glfwPollEvents()
 
+            Audio.update()
             currentScene?.update(delta)
             currentScene?.render()
 
@@ -98,6 +100,7 @@ class GameApp(
     }
 
     private fun cleanup() {
+        Audio.cleanup()
         currentScene?.onExit()
 
         if (window != 0L) {
