@@ -17,5 +17,11 @@ class Hud(private val renderer: SimpleTileRenderer, private val screenWidth: Int
             renderer.drawScreenTile(offsetX, 4, tileDef)
             offsetX += TILE_SIZE + 4
         }
+
+        // Draw gold counter at top-right
+        if (GameState.gold > 0) {
+            val goldX = screenWidth - TILE_SIZE - 8
+            renderer.drawScreenTile(goldX, 4, DungeonTileset.coinPile)
+        }
     }
 }

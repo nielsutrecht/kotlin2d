@@ -19,7 +19,8 @@ data class GeneratedDungeon(
     val rooms: List<Room>,
     val items: MutableList<Item>,
     val enemies: MutableList<Enemy>,
-    val chests: MutableList<Chest>
+    val chests: MutableList<Chest>,
+    val coinPiles: MutableList<CoinPile>
 )
 
 object DungeonGenerator {
@@ -144,7 +145,7 @@ object DungeonGenerator {
             }
         }
 
-        return GeneratedDungeon(map, rooms, items, enemies, chests)
+        return GeneratedDungeon(map, rooms, items, enemies, chests, mutableListOf())
     }
 
     private fun findCorridorChokepoint(map: GameMap, x1: Int, y1: Int, x2: Int, y2: Int): Pair<Int, Int>? {

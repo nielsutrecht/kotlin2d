@@ -19,6 +19,7 @@ class DungeonScene(
     private var items = mutableListOf<Item>()
     private var enemies = mutableListOf<Enemy>()
     private var chests = mutableListOf<Chest>()
+    private var coinPiles = mutableListOf<CoinPile>()
 
     private var playerX: Int = 0
     private var playerY: Int = 0
@@ -43,6 +44,7 @@ class DungeonScene(
             items = cached.items
             enemies = cached.enemies
             chests = cached.chests
+            coinPiles = cached.coinPiles
             playerX = cached.playerX
             playerY = cached.playerY
         } else {
@@ -53,6 +55,7 @@ class DungeonScene(
             items = dungeon.items
             enemies = dungeon.enemies
             chests = dungeon.chests
+            coinPiles = dungeon.coinPiles
 
             if (rooms.isNotEmpty()) {
                 playerX = rooms.first().centerX
@@ -60,7 +63,7 @@ class DungeonScene(
             }
 
             // Cache it
-            GameState.dungeonCache[level] = CachedLevel(map, rooms, items, enemies, chests, playerX, playerY)
+            GameState.dungeonCache[level] = CachedLevel(map, rooms, items, enemies, chests, coinPiles, playerX, playerY)
         }
     }
 
@@ -119,18 +122,23 @@ class DungeonScene(
                 chest.opened = true
                 Audio.playSound("dungeon/chest-open")
 
-                // Scatter contents onto adjacent floor tiles
-                val directions = listOf(0 to -1, 0 to 1, -1 to 0, 1 to 0)
-                val floors = directions.mapNotNull { (ddx, ddy) ->
-                    val nx = chest.x + ddx
-                    val ny = chest.y + ddy
-                    if (map.isWalkable(nx, ny)) nx to ny else null
-                }
+                // BFS to find free floor tiles for scatter
+                val freeTiles = findScatterTiles(chest.x, chest.y, chest.contents.size + 1)
+
+                // Scatter item contents
                 for ((index, itemType) in chest.contents.withIndex()) {
-                    if (index < floors.size) {
-                        items.add(Item(itemType, floors[index].first, floors[index].second))
-                    } else {
-                        GameState.inventory.add(itemType)
+                    if (index < freeTiles.size) {
+                        items.add(Item(itemType, freeTiles[index].first, freeTiles[index].second))
+                    }
+                }
+
+                // Drop coin pile
+                val coinAmount = (0..1000).random()
+                if (coinAmount > 0) {
+                    val coinIdx = chest.contents.size
+                    if (coinIdx < freeTiles.size) {
+                        coinPiles.add(CoinPile(freeTiles[coinIdx].first, freeTiles[coinIdx].second, coinAmount))
+                        Audio.playSound("items/coin-drop")
                     }
                 }
             }
@@ -154,6 +162,14 @@ class DungeonScene(
                     ItemType.SWORD -> "sword"
                 }
                 Audio.playSound(soundName)
+            }
+
+            // Pick up coin piles
+            val pile = coinPiles.find { it.x == playerX && it.y == playerY }
+            if (pile != null) {
+                GameState.gold += pile.amount
+                coinPiles.remove(pile)
+                Audio.playSound("items/coin-take")
             }
 
             // Check stairs
@@ -192,6 +208,13 @@ class DungeonScene(
             }
         }
 
+        // Draw coin piles on the map
+        for (pile in coinPiles) {
+            if (pile.x in range.startX..range.endX && pile.y in range.startY..range.endY) {
+                renderer.drawTileBatched(pile.x, pile.y, DungeonTileset.coinPile)
+            }
+        }
+
         // Draw items on the map
         for (item in items) {
             if (item.x in range.startX..range.endX && item.y in range.startY..range.endY) {
@@ -216,5 +239,48 @@ class DungeonScene(
 
         // HUD (screen-space, after world rendering)
         hud.render(level)
+    }
+
+    private fun findScatterTiles(originX: Int, originY: Int, count: Int): List<Pair<Int, Int>> {
+        val result = mutableListOf<Pair<Int, Int>>()
+        val claimed = mutableSetOf<Pair<Int, Int>>()
+        val visited = mutableSetOf(originX to originY)
+        val queue = ArrayDeque<Pair<Int, Int>>()
+
+        // Seed with all 8 neighbors
+        val dirs = listOf(-1 to -1, -1 to 0, -1 to 1, 0 to -1, 0 to 1, 1 to -1, 1 to 0, 1 to 1)
+        for ((ddx, ddy) in dirs) {
+            val pos = (originX + ddx) to (originY + ddy)
+            if (pos !in visited) {
+                visited.add(pos)
+                queue.add(pos)
+            }
+        }
+
+        val occupied = buildSet {
+            addAll(items.map { it.x to it.y })
+            addAll(enemies.map { it.x to it.y })
+            addAll(chests.map { it.x to it.y })
+            addAll(coinPiles.map { it.x to it.y })
+            add(playerX to playerY)
+        }
+
+        while (result.size < count && queue.isNotEmpty()) {
+            val (cx, cy) = queue.removeFirst()
+            if (map.isWalkable(cx, cy) && (cx to cy) !in occupied && (cx to cy) !in claimed) {
+                result.add(cx to cy)
+                claimed.add(cx to cy)
+            }
+            // Expand
+            for ((ddx, ddy) in dirs) {
+                val next = (cx + ddx) to (cy + ddy)
+                if (next !in visited) {
+                    visited.add(next)
+                    queue.add(next)
+                }
+            }
+        }
+
+        return result
     }
 }

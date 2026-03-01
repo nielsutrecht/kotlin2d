@@ -103,6 +103,14 @@ object DungeonTileset {
         atlasY = 45
     )
 
+    // Coins
+    val coinPile = TileDef(
+        kind = TileKind.ITEM,
+        variant = "coin_pile",
+        atlasX = 59,
+        atlasY = 23
+    )
+
     // Items
     val key = TileDef(
         kind = TileKind.ITEM,
@@ -186,6 +194,7 @@ object DungeonTileset {
         stairsUp,
         chestClosed,
         chestOpen,
+        coinPile,
         key,
         potion,
         sword,

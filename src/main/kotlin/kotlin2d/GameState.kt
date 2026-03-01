@@ -6,6 +6,7 @@ data class CachedLevel(
     val items: MutableList<Item>,
     val enemies: MutableList<Enemy>,
     val chests: MutableList<Chest>,
+    val coinPiles: MutableList<CoinPile>,
     var playerX: Int,
     var playerY: Int
 )
@@ -20,6 +21,7 @@ object GameState {
     var hp = 20
     var attack = 5
     var defense = 2
+    var gold = 0
 
     fun reset() {
         inventory.clear()
@@ -29,5 +31,6 @@ object GameState {
         hp = 20
         attack = 5
         defense = 2
+        gold = 0
     }
 }
