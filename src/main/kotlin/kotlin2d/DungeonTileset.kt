@@ -22,7 +22,8 @@ enum class TileKind {
     DOOR,
     STAIRS,
     ITEM,
-    ENEMY
+    ENEMY,
+    CHEST
 }
 
 enum class DoorVariant {
@@ -85,6 +86,21 @@ object DungeonTileset {
         variant = StairsVariant.UP.name.lowercase(),
         atlasX = 42,   // 1344 / 32
         atlasY = 15    // 480 / 32
+    )
+
+    // Chests
+    val chestClosed = TileDef(
+        kind = TileKind.CHEST,
+        variant = "closed",
+        atlasX = 44,
+        atlasY = 45
+    )
+
+    val chestOpen = TileDef(
+        kind = TileKind.CHEST,
+        variant = "open",
+        atlasX = 45,
+        atlasY = 45
     )
 
     // Items
@@ -168,6 +184,8 @@ object DungeonTileset {
         doorOpen,
         stairsDown,
         stairsUp,
+        chestClosed,
+        chestOpen,
         key,
         potion,
         sword,

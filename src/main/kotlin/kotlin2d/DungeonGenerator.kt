@@ -18,7 +18,8 @@ data class GeneratedDungeon(
     val map: GameMap,
     val rooms: List<Room>,
     val items: MutableList<Item>,
-    val enemies: MutableList<Enemy>
+    val enemies: MutableList<Enemy>,
+    val chests: MutableList<Chest>
 )
 
 object DungeonGenerator {
@@ -127,7 +128,23 @@ object DungeonGenerator {
             }
         }
 
-        return GeneratedDungeon(map, rooms, items, enemies)
+        // Spawn chests (skip first room, max one per room, ~20% chance)
+        val chests = mutableListOf<Chest>()
+        for (i in 1 until rooms.size) {
+            if (random.nextFloat() < 0.2f) {
+                val (cx, cy) = rooms[i].randomFloor(random)
+                val pos = cx to cy
+                if (map[cx, cy] == DungeonTileset.floor && pos !in occupied) {
+                    val allTypes = listOf(ItemType.KEY, ItemType.HEALTH_POTION, ItemType.SWORD)
+                    val count = random.nextInt(0, 4) // 0-3
+                    val contents = allTypes.shuffled(random).take(count)
+                    chests.add(Chest(cx, cy, contents = contents))
+                    occupied.add(pos)
+                }
+            }
+        }
+
+        return GeneratedDungeon(map, rooms, items, enemies, chests)
     }
 
     private fun findCorridorChokepoint(map: GameMap, x1: Int, y1: Int, x2: Int, y2: Int): Pair<Int, Int>? {

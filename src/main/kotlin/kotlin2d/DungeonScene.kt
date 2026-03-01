@@ -18,6 +18,7 @@ class DungeonScene(
     private lateinit var hud: Hud
     private var items = mutableListOf<Item>()
     private var enemies = mutableListOf<Enemy>()
+    private var chests = mutableListOf<Chest>()
 
     private var playerX: Int = 0
     private var playerY: Int = 0
@@ -41,6 +42,7 @@ class DungeonScene(
             rooms = cached.rooms
             items = cached.items
             enemies = cached.enemies
+            chests = cached.chests
             playerX = cached.playerX
             playerY = cached.playerY
         } else {
@@ -50,6 +52,7 @@ class DungeonScene(
             rooms = dungeon.rooms
             items = dungeon.items
             enemies = dungeon.enemies
+            chests = dungeon.chests
 
             if (rooms.isNotEmpty()) {
                 playerX = rooms.first().centerX
@@ -57,7 +60,7 @@ class DungeonScene(
             }
 
             // Cache it
-            GameState.dungeonCache[level] = CachedLevel(map, rooms, items, enemies, playerX, playerY)
+            GameState.dungeonCache[level] = CachedLevel(map, rooms, items, enemies, chests, playerX, playerY)
         }
     }
 
@@ -109,6 +112,32 @@ class DungeonScene(
             return
         }
 
+        // Chest interaction
+        val chest = chests.find { it.x == targetX && it.y == targetY }
+        if (chest != null) {
+            if (!chest.opened) {
+                chest.opened = true
+                Audio.playSound("dungeon/chest-open")
+
+                // Scatter contents onto adjacent floor tiles
+                val directions = listOf(0 to -1, 0 to 1, -1 to 0, 1 to 0)
+                val floors = directions.mapNotNull { (ddx, ddy) ->
+                    val nx = chest.x + ddx
+                    val ny = chest.y + ddy
+                    if (map.isWalkable(nx, ny)) nx to ny else null
+                }
+                for ((index, itemType) in chest.contents.withIndex()) {
+                    if (index < floors.size) {
+                        items.add(Item(itemType, floors[index].first, floors[index].second))
+                    } else {
+                        GameState.inventory.add(itemType)
+                    }
+                }
+            }
+            moveTimer = 0f
+            return
+        }
+
         if (map.isWalkable(targetX, targetY)) {
             playerX = targetX
             playerY = targetY
@@ -152,6 +181,14 @@ class DungeonScene(
         for (y in range.startY..range.endY) {
             for (x in range.startX..range.endX) {
                 renderer.drawTileBatched(x, y, map[x, y])
+            }
+        }
+
+        // Draw chests on the map
+        for (chest in chests) {
+            if (chest.x in range.startX..range.endX && chest.y in range.startY..range.endY) {
+                val tileDef = if (chest.opened) DungeonTileset.chestOpen else DungeonTileset.chestClosed
+                renderer.drawTileBatched(chest.x, chest.y, tileDef)
             }
         }
 

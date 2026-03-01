@@ -5,6 +5,7 @@ data class CachedLevel(
     val rooms: List<Room>,
     val items: MutableList<Item>,
     val enemies: MutableList<Enemy>,
+    val chests: MutableList<Chest>,
     var playerX: Int,
     var playerY: Int
 )
