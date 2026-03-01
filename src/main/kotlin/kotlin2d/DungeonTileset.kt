@@ -21,7 +21,8 @@ enum class TileKind {
     WALL,
     DOOR,
     STAIRS,
-    ITEM
+    ITEM,
+    ENEMY
 }
 
 enum class DoorVariant {
@@ -90,22 +91,58 @@ object DungeonTileset {
     val key = TileDef(
         kind = TileKind.ITEM,
         variant = "key",
-        atlasX = 1,
-        atlasY = 9
+        atlasX = 54,
+        atlasY = 45
     )
 
     val potion = TileDef(
         kind = TileKind.ITEM,
         variant = "potion",
-        atlasX = 5,
-        atlasY = 9
+        atlasX = 2,
+        atlasY = 25
     )
 
     val sword = TileDef(
         kind = TileKind.ITEM,
         variant = "sword",
-        atlasX = 9,
-        atlasY = 9
+        atlasX = 4,
+        atlasY = 29
+    )
+
+    // Enemies
+    val greenSlime = TileDef(
+        kind = TileKind.ENEMY,
+        variant = "green_slime",
+        atlasX = 49,
+        atlasY = 5
+    )
+
+    val skeleton = TileDef(
+        kind = TileKind.ENEMY,
+        variant = "skeleton",
+        atlasX = 22,
+        atlasY = 8
+    )
+
+    val bat = TileDef(
+        kind = TileKind.ENEMY,
+        variant = "bat",
+        atlasX = 44,
+        atlasY = 3
+    )
+
+    val rat = TileDef(
+        kind = TileKind.ENEMY,
+        variant = "rat",
+        atlasX = 64,
+        atlasY = 3
+    )
+
+    val goblin = TileDef(
+        kind = TileKind.ENEMY,
+        variant = "goblin",
+        atlasX = 45,
+        atlasY = 2
     )
 
     // Player character
@@ -114,6 +151,14 @@ object DungeonTileset {
         variant = "player",
         atlasX = 4,
         atlasY = 2
+    )
+
+    val enemyTile: Map<EnemyType, TileDef> = mapOf(
+        EnemyType.GREEN_SLIME to greenSlime,
+        EnemyType.SKELETON to skeleton,
+        EnemyType.BAT to bat,
+        EnemyType.RAT to rat,
+        EnemyType.GOBLIN to goblin
     )
 
     val all: List<TileDef> = listOf(
@@ -126,6 +171,11 @@ object DungeonTileset {
         key,
         potion,
         sword,
+        greenSlime,
+        skeleton,
+        bat,
+        rat,
+        goblin,
         player
     )
 

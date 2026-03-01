@@ -17,7 +17,8 @@ data class Room(val x: Int, val y: Int, val w: Int, val h: Int) {
 data class GeneratedDungeon(
     val map: GameMap,
     val rooms: List<Room>,
-    val items: MutableList<Item>
+    val items: MutableList<Item>,
+    val enemies: MutableList<Enemy>
 )
 
 object DungeonGenerator {
@@ -28,7 +29,8 @@ object DungeonGenerator {
         roomAttempts: Int = 30,
         minRoomSize: Int = 5,
         maxRoomSize: Int = 12,
-        random: Random = Random
+        random: Random = Random,
+        level: Int = 1
     ): GeneratedDungeon {
         val map = GameMap(width, height)
         map.fill(DungeonTileset.wall)
@@ -102,7 +104,30 @@ object DungeonGenerator {
             }
         }
 
-        return GeneratedDungeon(map, rooms, items)
+        // Spawn enemies in rooms (skip first room)
+        val enemies = mutableListOf<Enemy>()
+        val availableTypes = when {
+            level >= 3 -> EnemyType.entries
+            level >= 2 -> listOf(EnemyType.GREEN_SLIME, EnemyType.RAT, EnemyType.SKELETON, EnemyType.GOBLIN)
+            else -> listOf(EnemyType.GREEN_SLIME, EnemyType.RAT)
+        }
+        val occupied = items.map { it.x to it.y }.toMutableSet()
+        for (i in 1 until rooms.size) {
+            if (random.nextFloat() < 0.6f) {
+                val count = random.nextInt(1, 4)
+                repeat(count) {
+                    val (ex, ey) = rooms[i].randomFloor(random)
+                    val pos = ex to ey
+                    if (map[ex, ey] == DungeonTileset.floor && pos !in occupied) {
+                        val type = availableTypes[random.nextInt(availableTypes.size)]
+                        enemies.add(Enemy(type, ex, ey))
+                        occupied.add(pos)
+                    }
+                }
+            }
+        }
+
+        return GeneratedDungeon(map, rooms, items, enemies)
     }
 
     private fun findCorridorChokepoint(map: GameMap, x1: Int, y1: Int, x2: Int, y2: Int): Pair<Int, Int>? {

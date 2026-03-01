@@ -17,6 +17,7 @@ class DungeonScene(
     private lateinit var rooms: List<Room>
     private lateinit var hud: Hud
     private var items = mutableListOf<Item>()
+    private var enemies = mutableListOf<Enemy>()
 
     private var playerX: Int = 0
     private var playerY: Int = 0
@@ -39,14 +40,16 @@ class DungeonScene(
             map = cached.map
             rooms = cached.rooms
             items = cached.items
+            enemies = cached.enemies
             playerX = cached.playerX
             playerY = cached.playerY
         } else {
             // Generate new dungeon
-            val dungeon = DungeonGenerator.generate()
+            val dungeon = DungeonGenerator.generate(level = level)
             map = dungeon.map
             rooms = dungeon.rooms
             items = dungeon.items
+            enemies = dungeon.enemies
 
             if (rooms.isNotEmpty()) {
                 playerX = rooms.first().centerX
@@ -54,7 +57,7 @@ class DungeonScene(
             }
 
             // Cache it
-            GameState.dungeonCache[level] = CachedLevel(map, rooms, items, playerX, playerY)
+            GameState.dungeonCache[level] = CachedLevel(map, rooms, items, enemies, playerX, playerY)
         }
     }
 
@@ -153,6 +156,13 @@ class DungeonScene(
                     ItemType.SWORD -> DungeonTileset.sword
                 }
                 renderer.drawTileBatched(item.x, item.y, tileDef)
+            }
+        }
+
+        // Draw enemies on the map
+        for (enemy in enemies) {
+            if (enemy.x in range.startX..range.endX && enemy.y in range.startY..range.endY) {
+                renderer.drawTileBatched(enemy.x, enemy.y, DungeonTileset.enemyTile.getValue(enemy.type))
             }
         }
 
