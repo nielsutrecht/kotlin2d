@@ -99,6 +99,7 @@ class DungeonScene(
             if (GameState.inventory.has(ItemType.KEY)) {
                 GameState.inventory.remove(ItemType.KEY)
                 map[targetX, targetY] = DungeonTileset.doorOpen
+                Audio.playSound("dungeon/door-open")
                 // Move through the now-open door
                 playerX = targetX
                 playerY = targetY
@@ -111,6 +112,7 @@ class DungeonScene(
         if (map.isWalkable(targetX, targetY)) {
             playerX = targetX
             playerY = targetY
+            Audio.playSound("dungeon/walk-stone")
 
             // Pick up items
             val item = items.find { it.x == playerX && it.y == playerY }

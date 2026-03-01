@@ -25,7 +25,14 @@ object Audio {
     private const val SFX_POOL_SIZE = 8
     private val sfxSources = IntArray(SFX_POOL_SIZE)
     private var sfxNextIndex = 0
-    private val sfxBuffers = mutableMapOf<String, Int>()
+
+    private sealed class SoundEntry {
+        class Single(val buffer: Int) : SoundEntry()
+        class Group(val buffers: List<Int>, var lastIndex: Int = -1) : SoundEntry()
+    }
+
+    private val sfxEntries = mutableMapOf<String, SoundEntry>()
+    private val groupPattern = Regex("^(.*)-(\\d+)$")
 
     fun init() {
         device = alcOpenDevice(null as CharSequence?)
@@ -52,9 +59,33 @@ object Audio {
             sfxSources[i] = alGenSources()
         }
         val soundsDir = File("sounds")
-        soundsDir.listFiles { f -> f.extension == "ogg" }?.forEach { file ->
-            val name = file.nameWithoutExtension
-            sfxBuffers[name] = decodeOgg(file)
+        val rawBuffers = mutableMapOf<String, Int>()
+        if (soundsDir.isDirectory) {
+            soundsDir.walk().filter { it.isFile && it.extension == "ogg" }.forEach { file ->
+                val name = file.relativeTo(soundsDir).path.removeSuffix(".ogg")
+                rawBuffers[name] = decodeOgg(file)
+            }
+        }
+
+        // Group by convention: names ending in -{digits} form a group
+        val grouped = mutableMapOf<String, MutableList<Int>>()
+        val singles = mutableMapOf<String, Int>()
+        for ((name, buffer) in rawBuffers) {
+            val match = groupPattern.matchEntire(name)
+            if (match != null) {
+                val groupName = match.groupValues[1]
+                grouped.getOrPut(groupName) { mutableListOf() }.add(buffer)
+            } else {
+                singles[name] = buffer
+            }
+        }
+        for ((name, buffers) in grouped) {
+            sfxEntries[name] = SoundEntry.Group(buffers)
+        }
+        for ((name, buffer) in singles) {
+            if (name !in sfxEntries) {
+                sfxEntries[name] = SoundEntry.Single(buffer)
+            }
         }
 
         available = true
@@ -70,10 +101,19 @@ object Audio {
 
     fun playSound(name: String) {
         if (!available) return
-        val buffer = sfxBuffers[name]
-        if (buffer == null) {
+        val entry = sfxEntries[name]
+        if (entry == null) {
             println("Warning: Unknown sound '$name'")
             return
+        }
+        val buffer = when (entry) {
+            is SoundEntry.Single -> entry.buffer
+            is SoundEntry.Group -> {
+                val candidates = entry.buffers.indices.filter { it != entry.lastIndex }
+                val idx = candidates.random()
+                entry.lastIndex = idx
+                entry.buffers[idx]
+            }
         }
         val src = sfxSources[sfxNextIndex % SFX_POOL_SIZE]
         alSourceStop(src)
@@ -98,10 +138,13 @@ object Audio {
             alSourceStop(src)
             alDeleteSources(src)
         }
-        for (buf in sfxBuffers.values) {
-            alDeleteBuffers(buf)
+        for (entry in sfxEntries.values) {
+            when (entry) {
+                is SoundEntry.Single -> alDeleteBuffers(entry.buffer)
+                is SoundEntry.Group -> entry.buffers.forEach { alDeleteBuffers(it) }
+            }
         }
-        sfxBuffers.clear()
+        sfxEntries.clear()
         alcMakeContextCurrent(0)
         alcDestroyContext(context)
         alcCloseDevice(device)
