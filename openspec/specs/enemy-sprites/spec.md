@@ -16,11 +16,11 @@ The system SHALL define five enemy types — GREEN_SLIME, SKELETON, BAT, RAT, an
 - **THEN** `DungeonTileset` SHALL contain tile definitions for `greenSlime` (49,5), `skeleton` (22,8), `bat` (44,3), `rat` (64,3), and `goblin` (45,2), each with `TileKind.ENEMY`
 
 ### Requirement: Enemy data model stores position and type
-The system SHALL represent enemies with an `Enemy` data class containing `type: EnemyType`, `x: Int`, `y: Int`, and base stats (`hp: Int`, `attack: Int`, `defense: Int`). An `EnemyType` enum SHALL define GREEN_SLIME, SKELETON, BAT, RAT, and GOBLIN with default stat values.
+The system SHALL represent enemies with an `Enemy` data class containing `type: EnemyType`, `x: Int`, `y: Int`, base stats (`hp`, `attack`, `defense`), AI state (`state: EnemyState`, default IDLE), spawn room reference (`spawnRoom: Room`), and a turn skip counter (`turnCounter: Int`, default 0) for speed control.
 
 #### Scenario: Enemy instance creation
-- **WHEN** an enemy is created with `Enemy(EnemyType.SKELETON, x=5, y=10)`
-- **THEN** the enemy SHALL have the skeleton's default stats and the specified grid position
+- **WHEN** an enemy is created with `Enemy(EnemyType.SKELETON, x=5, y=10, spawnRoom=room)`
+- **THEN** the enemy SHALL have the skeleton's default stats, the specified grid position, IDLE state, and the given spawn room reference
 
 ### Requirement: Enemies spawn in dungeon rooms during generation
 The dungeon generator SHALL place enemies in rooms during level generation. Each room except the first (starting) room SHALL have a chance to contain 1-3 enemies. Enemies SHALL NOT be placed on walls, doors, stairs, items, or other enemies.

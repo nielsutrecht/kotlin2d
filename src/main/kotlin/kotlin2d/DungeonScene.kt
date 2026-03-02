@@ -1,5 +1,6 @@
 package kotlin2d
 
+import kotlin.random.Random
 import org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT
 import org.lwjgl.opengl.GL11.glClear
 import org.lwjgl.opengl.GL11.glClearColor
@@ -146,6 +147,18 @@ class DungeonScene(
             return
         }
 
+        // Check for enemy on target tile (player bumps enemy)
+        val targetEnemy = enemies.find { it.x == targetX && it.y == targetY }
+        if (targetEnemy != null) {
+            killEnemy(targetEnemy)
+            playerX = targetX
+            playerY = targetY
+            Audio.playSound("dungeon/walk-stone")
+            updateEnemies()
+            moveTimer = 0f
+            return
+        }
+
         if (map.isWalkable(targetX, targetY)) {
             playerX = targetX
             playerY = targetY
@@ -179,6 +192,8 @@ class DungeonScene(
             } else if (tile == DungeonTileset.stairsUp && level > 1) {
                 app.requestSceneSwitch(DungeonScene(app, level - 1))
             }
+
+            updateEnemies()
         }
 
         moveTimer = 0f
@@ -239,6 +254,136 @@ class DungeonScene(
 
         // HUD (screen-space, after world rendering)
         hud.render(level)
+    }
+
+    private fun killEnemy(enemy: Enemy) {
+        enemies.remove(enemy)
+        val coins = Random.nextInt(1, 21)
+        coinPiles.add(CoinPile(enemy.x, enemy.y, coins))
+        GameState.gold += coins
+        Audio.playSound("items/coin-take")
+    }
+
+    private fun updateEnemies() {
+        val occupiedByEnemy = enemies.map { it.x to it.y }.toMutableSet()
+        val blocked = occupiedByEnemy.toMutableSet()
+        val distMap = map.bfsDistanceMap(playerX, playerY, blocked)
+
+        val toRemove = mutableListOf<Enemy>()
+
+        for (enemy in enemies) {
+            // Speed control
+            enemy.turnCounter++
+            if (enemy.turnCounter < enemy.type.turnsPerMove) continue
+            enemy.turnCounter = 0
+
+            // Detection: check LOS + range
+            val dx = enemy.x - playerX
+            val dy = enemy.y - playerY
+            val dist = dx * dx + dy * dy
+            val range = enemy.type.detectionRange
+            if (dist <= range * range && map.hasLineOfSight(enemy.x, enemy.y, playerX, playerY)) {
+                enemy.state = EnemyState.CHASING
+            } else {
+                enemy.state = EnemyState.IDLE
+            }
+
+            val oldX = enemy.x
+            val oldY = enemy.y
+
+            when (enemy.state) {
+                EnemyState.CHASING -> moveChasing(enemy, distMap, occupiedByEnemy)
+                EnemyState.IDLE -> moveIdle(enemy, occupiedByEnemy)
+            }
+
+            // Update occupied set
+            if (enemy.x != oldX || enemy.y != oldY) {
+                occupiedByEnemy.remove(oldX to oldY)
+                occupiedByEnemy.add(enemy.x to enemy.y)
+            }
+
+            // Check if enemy walked onto player
+            if (enemy.x == playerX && enemy.y == playerY) {
+                toRemove.add(enemy)
+            }
+        }
+
+        for (enemy in toRemove) {
+            killEnemy(enemy)
+        }
+    }
+
+    private fun moveChasing(enemy: Enemy, distMap: IntArray, occupied: Set<Pair<Int, Int>>) {
+        // Bat: 50% random move even while chasing
+        if (enemy.type == EnemyType.BAT && Random.nextFloat() < 0.5f) {
+            moveRandom(enemy, occupied)
+            return
+        }
+
+        val dirs = listOf(0 to -1, 0 to 1, -1 to 0, 1 to 0)
+        var bestDist = Int.MAX_VALUE
+        var bestX = enemy.x
+        var bestY = enemy.y
+
+        for ((ddx, ddy) in dirs) {
+            val nx = enemy.x + ddx
+            val ny = enemy.y + ddy
+            if (!map.isWalkable(nx, ny)) continue
+            if ((nx to ny) in occupied && !(nx == playerX && ny == playerY)) continue
+            val d = distMap[ny * map.width + nx]
+            if (d < bestDist) {
+                bestDist = d
+                bestX = nx
+                bestY = ny
+            }
+        }
+
+        enemy.x = bestX
+        enemy.y = bestY
+    }
+
+    private fun moveIdle(enemy: Enemy, occupied: Set<Pair<Int, Int>>) {
+        when (enemy.type) {
+            EnemyType.SKELETON -> movePatrol(enemy, occupied)
+            else -> moveRandom(enemy, occupied)
+        }
+    }
+
+    private fun moveRandom(enemy: Enemy, occupied: Set<Pair<Int, Int>>) {
+        val dirs = listOf(0 to -1, 0 to 1, -1 to 0, 1 to 0)
+        val shuffled = dirs.shuffled()
+        for ((ddx, ddy) in shuffled) {
+            val nx = enemy.x + ddx
+            val ny = enemy.y + ddy
+            if (!map.isWalkable(nx, ny)) continue
+            if ((nx to ny) in occupied) continue
+            if (!isInSpawnRoom(enemy, nx, ny)) continue
+            enemy.x = nx
+            enemy.y = ny
+            return
+        }
+    }
+
+    private fun movePatrol(enemy: Enemy, occupied: Set<Pair<Int, Int>>) {
+        // Pace back and forth horizontally within spawn room
+        val room = enemy.spawnRoom ?: return moveRandom(enemy, occupied)
+        // Try current direction (stored as sign of turnCounter... use a simple heuristic: alternate x direction)
+        val dir = if ((enemy.x + enemy.y) % 2 == 0) 1 else -1
+        val nx = enemy.x + dir
+        if (map.isWalkable(nx, enemy.y) && (nx to enemy.y) !in occupied && nx >= room.x && nx < room.x + room.w) {
+            enemy.x = nx
+        } else {
+            // Try opposite direction
+            val ox = enemy.x - dir
+            if (map.isWalkable(ox, enemy.y) && (ox to enemy.y) !in occupied && ox >= room.x && ox < room.x + room.w) {
+                enemy.x = ox
+            }
+        }
+    }
+
+    private fun isInSpawnRoom(enemy: Enemy, x: Int, y: Int): Boolean {
+        val room = enemy.spawnRoom ?: return true
+        return x >= room.x && x < room.x + room.w && y >= room.y && y < room.y + room.h
     }
 
     private fun findScatterTiles(originX: Int, originY: Int, count: Int): List<Pair<Int, Int>> {

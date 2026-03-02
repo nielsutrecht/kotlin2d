@@ -122,7 +122,7 @@ object DungeonGenerator {
                     val pos = ex to ey
                     if (map[ex, ey] == DungeonTileset.floor && pos !in occupied) {
                         val type = availableTypes[random.nextInt(availableTypes.size)]
-                        enemies.add(Enemy(type, ex, ey))
+                        enemies.add(Enemy(type, ex, ey, spawnRoom = rooms[i]))
                         occupied.add(pos)
                     }
                 }
